@@ -24,7 +24,7 @@ const App = () => {
 
     // 重要: ここをデプロイしたAniwatch APIの実際のURLに置き換えてください。
     // 例: const BASE_API_URL = 'https://chill-anime-git-main-amos-projects-34828662.vercel.app/';
-    const BASE_API_URL = 'https://ghoshritesh12-aniwatch-api.vercel.app'; // Aniwatch APIのプレースホルダーURL
+    const BASE_API_URL = 'https://chill-anime-git-main-amos-projects-34828662.vercel.app/'; // Aniwatch APIのプレースホルダーURL
 
     // 実際のAPIからアニメをフェッチする関数
     const fetchAnime = async (query) => {
