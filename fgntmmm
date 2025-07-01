@@ -1,0 +1,203 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App'; // Appコンポーネントをインポート
+
+// React 18の新しいAPIを使用
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// src/App.js (または App.jsx)
+// メインのReactコンポーネントです。
+import React, { useState, useEffect } from 'react';
+import { Search, Loader2 } from 'lucide-react'; // Lucide Reactからアイコンをインポート
+
+// メインのAppコンポーネント
+const App = () => {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [animeResults, setAnimeResults] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    // 重要: ここをデプロイしたAniwatch APIの実際のURLに置き換えてください。
+    // 例: const BASE_API_URL = 'https://your-aniwatch-api.vercel.app';
+    const BASE_API_URL = 'https://ghoshritesh12-aniwatch-api.vercel.app'; // Aniwatch APIのプレースホルダーURL
+
+    // 実際のAPIからアニメをフェッチする関数
+    const fetchAnime = async (query) => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            // APIのURLを構築。検索エンドポイントが /anime/search?q= のような形式だと仮定しています。
+            // Aniwatch APIの具体的な実装に基づいて、このURLを調整する必要があるかもしれません。
+            const apiUrl = `${BASE_API_URL}/anime/search?q=${encodeURIComponent(query)}`;
+
+            const response = await fetch(apiUrl);
+
+            if (!response.ok) {
+                // 応答がOKでない場合（例: 404, 500）、エラーをスローします
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'APIからのデータの取得に失敗しました。');
+            }
+
+            const data = await response.json();
+
+            // API応答の構造は異なる場合があります。
+            // APIがアニメオブジェクトの配列を返すと仮定しています。
+            // APIの実際の応答構造に基づいて、'data.results' または 'data' 自体を調整する必要があるかもしれません。
+            if (data && Array.isArray(data.results)) { // APIが配列を 'data.results' で返す場合
+                setAnimeResults(data.results.map(item => ({
+                    id: item.id || item.animeId, // 'id' または 'animeId' などを使用
+                    title: item.title || 'タイトル不明',
+                    description: item.description || '説明なし',
+                    imageUrl: item.image || item.coverImage || `https://placehold.co/400x225/A7C7E7/000000?text=No+Image`, // 'image' または 'coverImage' などを使用
+                    episodes: item.episodes || '不明',
+                    status: item.status || '不明',
+                })));
+            } else if (data && Array.isArray(data)) { // APIが配列を直接返す場合
+                 setAnimeResults(data.map(item => ({
+                    id: item.id || item.animeId,
+                    title: item.title || 'タイトル不明',
+                    description: item.description || '説明なし',
+                    imageUrl: item.image || item.coverImage || `https://placehold.co/400x225/A7C7E7/000000?text=No+Image`,
+                    episodes: item.episodes || '不明',
+                    status: item.status || '不明',
+                })));
+            }
+            else {
+                setAnimeResults([]); // 結果がないか、予期しない形式
+            }
+
+        } catch (err) {
+            setError(`アニメの取得中にエラーが発生しました: ${err.message}`);
+            console.error('API呼び出しエラー:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 検索ボタンのクリックまたはEnterキーの押下を処理
+    const handleSearch = () => {
+        // 検索クエリが空の場合、すべてのアニメ（またはデフォルトのセット）をフェッチします。
+        // APIがすべての結果に対して空のクエリをサポートしていない場合、このロジックを調整する必要があるかもしれません。
+        fetchAnime(searchQuery.trim());
+    };
+
+    // コンポーネントのマウント時または初期ロード時に、いくつかのデフォルト結果をフェッチします（例: 人気のアニメ）
+    useEffect(() => {
+        fetchAnime(''); // 初期データ（例: 人気のアニメまたは空の検索）をフェッチ
+    }, []);
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white font-inter p-4 sm:p-8">
+            <div className="max-w-6xl mx-auto">
+                <h1 className="text-4xl sm:text-5xl font-extrabold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 rounded-lg">
+                    Aniwatch Browser
+                </h1>
+
+                {/* 検索バー */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+                    <input
+                        type="text"
+                        placeholder="アニメを検索..."
+                        className="w-full sm:w-2/3 p-4 rounded-xl bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition duration-300 shadow-lg"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                                handleSearch();
+                            }
+                        }}
+                    />
+                    <button
+                        onClick={handleSearch}
+                        className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-bold rounded-xl shadow-lg hover:from-purple-700 hover:to-pink-600 transition duration-300 flex items-center justify-center gap-2 transform hover:scale-105"
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <Loader2 className="animate-spin" size={24} />
+                        ) : (
+                            <Search size={24} />
+                        )}
+                        <span>検索</span>
+                    </button>
+                </div>
+
+                {/* ローディングとエラーの状態 */}
+                {isLoading && (
+                    <div className="flex justify-center items-center h-48">
+                        <Loader2 className="animate-spin text-purple-400" size={64} />
+                        <p className="ml-4 text-xl text-purple-300">読み込み中...</p>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="bg-red-600 p-4 rounded-lg text-center text-white font-semibold mb-8 shadow-md">
+                        {error}
+                    </div>
+                )}
+
+                {/* アニメ結果グリッド */}
+                {!isLoading && !error && animeResults.length === 0 && searchQuery.trim() && (
+                    <div className="text-center text-gray-400 text-xl mt-16">
+                        検索結果が見つかりませんでした。
+                    </div>
+                )}
+
+                 {!isLoading && !error && animeResults.length === 0 && !searchQuery.trim() && (
+                    <div className="text-center text-gray-400 text-xl mt-16">
+                        検索を開始するか、利用可能なアニメを閲覧してください。
+                    </div>
+                )}
+
+                {!isLoading && !error && animeResults.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {animeResults.map((anime) => (
+                            <div
+                                key={anime.id}
+                                className="bg-gray-800 rounded-xl overflow-hidden shadow-2xl transform hover:scale-105 transition duration-300 cursor-pointer border border-gray-700"
+                            >
+                                <img
+                                    src={anime.imageUrl}
+                                    alt={anime.title}
+                                    className="w-full h-48 object-cover rounded-t-xl"
+                                    onError={(e) => {
+                                        e.target.onerror = null; // 無限ループを防ぐ
+                                        e.target.src = `https://placehold.co/400x225/A7C7E7/000000?text=No+Image`;
+                                    }}
+                                />
+                                <div className="p-6">
+                                    <h2 className="text-2xl font-bold mb-2 text-purple-300">
+                                        {anime.title}
+                                    </h2>
+                                    <p className="text-gray-300 text-sm mb-4 line-clamp-3">
+                                        {anime.description}
+                                    </p>
+                                    <div className="flex justify-between items-center text-gray-400 text-sm">
+                                        <span>エピソード: {anime.episodes}</span>
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                            anime.status === '完結' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'
+                                        }`}>
+                                            {anime.status}
+                                        </span>
+                                    </div>
+                                    <button
+                                        className="mt-6 w-full py-3 bg-purple-700 hover:bg-purple-800 text-white font-semibold rounded-lg shadow-md transition duration-300 transform hover:scale-100"
+                                        onClick={() => alert(`「${anime.title}」を視聴する機能は現在開発中です。`)}
+                                    >
+                                        視聴する
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default App;
